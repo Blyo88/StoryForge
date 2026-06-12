@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 48 29% 96%;
+  --foreground: 210 14% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 14% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 14% 11%;
+  --primary: 173 80% 24%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 34 78% 46%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 42 20% 90%;
+  --muted-foreground: 215 14% 38%;
+  --accent: 266 71% 58%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 75% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 36 18% 78%;
+  --input: 36 18% 78%;
+  --ring: 173 80% 24%;
+  --radius: 0.5rem;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  min-height: 100vh;
+  background:
+    linear-gradient(90deg, rgba(15, 118, 110, 0.08) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(180, 83, 9, 0.06) 1px, transparent 1px),
+    hsl(var(--background));
+  background-size: 42px 42px;
+  color: hsl(var(--foreground));
+}
+
+::selection {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.story-surface {
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.14), transparent 34%),
+    linear-gradient(315deg, rgba(180, 83, 9, 0.12), transparent 36%),
+    #111315;
+}
+

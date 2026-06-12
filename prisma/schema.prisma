@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id          String         @id @default(cuid())
+  email       String         @unique
+  name        String?
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  profile     Profile?
+  inputs      StoryInput[]
+  sessions    StorySession[]
+
+  @@map("users")
+}
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  displayName     String?  @map("display_name")
+  preferredWorlds Json?    @map("preferred_worlds")
+  language        String   @default("es")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model World {
+  id          String   @id
+  name        String
+  description String
+  tone        String
+  rules       Json
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  inputs      StoryInput[]
+  sessions    StorySession[]
+
+  @@map("worlds")
+}
+
+model StoryInput {
+  id          String                @id @default(cuid())
+  userId      String?               @map("user_id")
+  worldId     String                @map("world_id")
+  kind        String
+  rawText     String                @map("raw_text")
+  safetyStatus String               @default("ok") @map("safety_status")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  user        User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+  world       World                 @relation(fields: [worldId], references: [id])
+  extraction  NarrativeExtraction?
+  sessions    StorySession[]
+
+  @@index([worldId])
+  @@index([userId])
+  @@map("story_inputs")
+}
+
+model NarrativeExtraction {
+  id               String     @id @default(cuid())
+  inputId          String     @unique @map("input_id")
+  mainConflict     String     @map("main_conflict")
+  protagonistGoal  String     @map("protagonist_goal")
+  emotions         Json
+  relationships    Json
+  coreEssence      String     @map("core_essence")
+  narrativeStakes  String     @map("narrative_stakes")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  input            StoryInput @relation(fields: [inputId], references: [id], onDelete: Cascade)
+
+  @@map("narrative_extractions")
+}
+
+model StorySession {
+  id             String          @id @default(cuid())
+  userId         String?         @map("user_id")
+  inputId        String          @map("input_id")
+  worldId        String          @map("world_id")
+  title          String
+  premise        String
+  status         String          @default("active")
+  currentSceneId String?         @map("current_scene_id")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  input          StoryInput      @relation(fields: [inputId], references: [id], onDelete: Cascade)
+  world          World           @relation(fields: [worldId], references: [id])
+  characters     Character[]
+  scenes         Scene[]
+  choices        Choice[]
+  decisionEvents DecisionEvent[]
+  memory         StoryMemory?
+
+  @@index([userId])
+  @@index([worldId])
+  @@index([inputId])
+  @@map("story_sessions")
+}
+
+model Character {
+  id                     String           @id @default(cuid())
+  storySessionId          String           @map("story_session_id")
+  name                   String
+  role                   String
+  archetype              String
+  motivation             String
+  fear                   String
+  relationToProtagonist  String           @map("relation_to_protagonist")
+  traits                 Json
+  createdAt              DateTime         @default(now()) @map("created_at")
+  storySession           StorySession     @relation(fields: [storySessionId], references: [id], onDelete: Cascade)
+  state                  CharacterState?
+
+  @@index([storySessionId])
+  @@map("characters")
+}
+
+model CharacterState {
+  id          String    @id @default(cuid())
+  characterId String    @unique @map("character_id")
+  trust       Int       @default(0)
+  tension     Int       @default(0)
+  loyalty     Int       @default(0)
+  suspicion   Int       @default(0)
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@map("character_states")
+}
+
+model Scene {
+  id              String          @id @default(cuid())
+  storySessionId  String          @map("story_session_id")
+  index           Int
+  title           String
+  narration       String
+  dialogue        Json
+  reactions       Json
+  createdAt       DateTime        @default(now()) @map("created_at")
+  storySession    StorySession    @relation(fields: [storySessionId], references: [id], onDelete: Cascade)
+  choices         Choice[]
+  decisionEvents  DecisionEvent[]
+
+  @@index([storySessionId])
+  @@map("scenes")
+}
+
+model Choice {
+  id                    String          @id @default(cuid())
+  storySessionId         String          @map("story_session_id")
+  sceneId                String          @map("scene_id")
+  label                  String
+  description            String
+  narrativeIntent        String          @map("narrative_intent")
+  predictedConsequence   String          @map("predicted_consequence")
+  createdAt              DateTime        @default(now()) @map("created_at")
+  storySession           StorySession    @relation(fields: [storySessionId], references: [id], onDelete: Cascade)
+  scene                  Scene           @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  decisionEvents         DecisionEvent[]
+
+  @@index([storySessionId])
+  @@index([sceneId])
+  @@map("choices")
+}
+
+model DecisionEvent {
+  id                 String       @id @default(cuid())
+  storySessionId      String       @map("story_session_id")
+  sceneId             String       @map("scene_id")
+  choiceId            String       @map("choice_id")
+  consequenceSummary  String       @map("consequence_summary")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  storySession        StorySession @relation(fields: [storySessionId], references: [id], onDelete: Cascade)
+  scene               Scene        @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  choice              Choice       @relation(fields: [choiceId], references: [id], onDelete: Cascade)
+
+  @@index([storySessionId])
+  @@map("decision_events")
+}
+
+model StoryMemory {
+  id                   String       @id @default(cuid())
+  storySessionId        String       @unique @map("story_session_id")
+  facts                Json
+  unresolvedConflicts  Json         @map("unresolved_conflicts")
+  relationshipChanges  Json         @map("relationship_changes")
+  createdAt            DateTime     @default(now()) @map("created_at")
+  updatedAt            DateTime     @updatedAt @map("updated_at")
+  storySession         StorySession @relation(fields: [storySessionId], references: [id], onDelete: Cascade)
+
+  @@map("story_memory")
+}
+

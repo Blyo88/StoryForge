@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { BookOpenText, Sparkles } from "lucide-react";
 
+// TypeScript puede advertir sobre importaciones de CSS con efectos secundarios si no hay
+// declaraciones. Esto no afecta al runtime; Next.js gestiona estas importaciones.
+// @ts-ignore
 import "./globals.css";
 
 const geistSans = Geist({

@@ -5,10 +5,14 @@ export const narrativeExtractionSchema = {
     protagonistGoal: { type: "string" },
     emotions: {
       type: "array",
+      minItems: 2,
+      maxItems: 6,
       items: { type: "string" }
     },
     relationships: {
       type: "array",
+      minItems: 1,
+      maxItems: 5,
       items: {
         type: "object",
         properties: {
@@ -39,6 +43,8 @@ export const charactersSchema = {
   properties: {
     characters: {
       type: "array",
+      minItems: 3,
+      maxItems: 5,
       items: {
         type: "object",
         properties: {
@@ -126,6 +132,8 @@ export const sceneSchema = {
     },
     choices: {
       type: "array",
+      minItems: 3,
+      maxItems: 3,
       items: {
         type: "object",
         properties: {
@@ -166,3 +174,12 @@ export const continuationSchema = {
   additionalProperties: false
 } as const;
 
+export const storySeedSchema = {
+  type: "object",
+  properties: {
+    characters: charactersSchema.properties.characters,
+    scene: sceneSchema
+  },
+  required: ["characters", "scene"],
+  additionalProperties: false
+} as const;

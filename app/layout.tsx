@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
-import { BookOpenText, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
-// TypeScript puede advertir sobre importaciones de CSS con efectos secundarios si no hay
-// declaraciones. Esto no afecta al runtime; Next.js gestiona estas importaciones.
-// @ts-ignore
+import { StoryForgeLogo } from "@/components/storyforge-logo";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,8 +18,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "StoryForge",
-  description: "Historias interactivas personalizadas generadas con IA."
+  title: "StoryForge | Tu historia. Tu mundo. Tus decisiones.",
+  description:
+    "Transforma experiencias, suenos y metas en aventuras interactivas impulsadas por IA."
 };
 
 export default function RootLayout({
@@ -31,21 +31,23 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <header className="border-b bg-white/85 backdrop-blur">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <span className="grid size-9 place-items-center rounded-md bg-primary text-primary-foreground">
-                <BookOpenText className="size-5" aria-hidden="true" />
-              </span>
-              <span>StoryForge</span>
-            </Link>
-            <nav className="flex items-center gap-2 text-sm">
+        <header className="sticky top-0 z-50 border-b border-white/10 bg-[#070a0d]/88 backdrop-blur-xl">
+          <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
+            <StoryForgeLogo />
+            <nav className="flex items-center gap-5 text-sm">
+              <Link href="/#worlds" className="hidden text-white/50 transition hover:text-white md:block">
+                Mundos
+              </Link>
+              <Link href="/#forge" className="hidden text-white/50 transition hover:text-white md:block">
+                Crear
+              </Link>
               <Link
-                href="/create"
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground transition hover:bg-primary/90"
+                href="/#forge"
+                className="inline-flex h-10 items-center gap-2 rounded-md bg-white px-4 font-semibold text-black transition hover:bg-cyan-100"
               >
                 <Sparkles className="size-4" aria-hidden="true" />
-                Crear historia
+                <span className="hidden sm:inline">Crear historia</span>
+                <span className="sm:hidden">Crear</span>
               </Link>
             </nav>
           </div>
@@ -55,4 +57,3 @@ export default function RootLayout({
     </html>
   );
 }
-

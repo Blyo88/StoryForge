@@ -11,6 +11,7 @@ Primera version funcional de StoryForge: una app Next.js 15 que convierte una ex
 - Supabase
 - Prisma
 - OpenAI Responses API
+- Framer Motion
 
 ## Estructura
 
@@ -56,6 +57,8 @@ Copia `.env.local.example` a `.env.local` y configura:
 ```bash
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.5
+OPENAI_TIMEOUT_MS=60000
+STORYFORGE_DEMO_FALLBACK=true
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 DATABASE_URL=
@@ -63,6 +66,8 @@ DIRECT_URL=
 ```
 
 Si `OPENAI_API_KEY` no existe, `/api/stories/start` responde con una historia demo local para permitir probar la UI.
+
+Si OpenAI falla durante desarrollo, `STORYFORGE_DEMO_FALLBACK=true` mantiene el flujo funcional y muestra un aviso visible indicando que se uso el modo demo.
 
 Si `DATABASE_URL` no existe, la historia se genera pero no se persiste.
 
@@ -72,6 +77,7 @@ Si `DATABASE_URL` no existe, la historia se genera pero no se persiste.
 pnpm install
 pnpm prisma:generate
 pnpm dev
+pnpm test:smoke
 ```
 
 ## Endpoint principal
@@ -96,4 +102,10 @@ Devuelve:
 - personajes
 - primera escena
 - tres decisiones
+
+## Diagnostico de generacion
+
+El formulario incluye validacion visible, contador de caracteres, timeout, cancelacion, progreso por etapas y mensajes con `requestId`. El endpoint devuelve errores JSON estandarizados y la cabecera `X-Request-Id`.
+
+La prueba `pnpm test:smoke` usa Chrome para verificar el boton de generacion, las tres decisiones, el estado visual de error y la ausencia de overflow horizontal en movil.
 

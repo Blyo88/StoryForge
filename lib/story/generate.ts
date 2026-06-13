@@ -12,13 +12,13 @@ import { CHARACTER_GENERATION_PROMPT } from "@/lib/openai/prompts/characters";
 import { NARRATIVE_EXTRACTION_PROMPT } from "@/lib/openai/prompts/extraction";
 import { SCENE_GENERATION_PROMPT } from "@/lib/openai/prompts/scene";
 import {
-  charactersSchema,
   narrativeExtractionSchema,
-  sceneSchema
+  storySeedSchema
 } from "@/lib/openai/schemas";
 
-type CharacterGenerationOutput = {
+type StorySeedOutput = {
   characters: Array<Omit<StoryCharacter, "id">>;
+  scene: SceneGenerationOutput;
 };
 
 type SceneGenerationOutput = {
@@ -60,7 +60,7 @@ function buildExtractionInput(params: {
   );
 }
 
-function buildCharacterInput(params: {
+function buildStorySeedInput(params: {
   extraction: NarrativeExtraction;
   world: WorldDefinition;
 }) {
@@ -68,23 +68,7 @@ function buildCharacterInput(params: {
     {
       narrativeExtraction: params.extraction,
       selectedWorld: params.world,
-      requiredCharacterCount: "3 to 5"
-    },
-    null,
-    2
-  );
-}
-
-function buildSceneInput(params: {
-  extraction: NarrativeExtraction;
-  characters: StoryCharacter[];
-  world: WorldDefinition;
-}) {
-  return JSON.stringify(
-    {
-      narrativeExtraction: params.extraction,
-      characters: params.characters,
-      selectedWorld: params.world,
+      requiredCharacterCount: "3 to 5",
       requiredChoices: 3
     },
     null,
@@ -104,32 +88,22 @@ export async function generateOpenAIStory(params: {
     schema: narrativeExtractionSchema
   });
 
-  const characterOutput =
-    await generateStructuredOutput<CharacterGenerationOutput>({
-      name: "story_characters",
-      instructions: CHARACTER_GENERATION_PROMPT,
-      input: buildCharacterInput({
-        extraction,
-        world: params.world
-      }),
-      schema: charactersSchema
-    });
+  const seedOutput = await generateStructuredOutput<StorySeedOutput>({
+    name: "story_seed",
+    instructions: `${CHARACTER_GENERATION_PROMPT}\n\n${SCENE_GENERATION_PROMPT}`,
+    input: buildStorySeedInput({
+      extraction,
+      world: params.world
+    }),
+    schema: storySeedSchema
+  });
 
-  const characters = characterOutput.characters.map((character) => ({
+  const characters = seedOutput.characters.map((character) => ({
     ...character,
     id: createId("char")
   }));
 
-  const sceneOutput = await generateStructuredOutput<SceneGenerationOutput>({
-    name: "first_scene",
-    instructions: SCENE_GENERATION_PROMPT,
-    input: buildSceneInput({
-      extraction,
-      characters,
-      world: params.world
-    }),
-    schema: sceneSchema
-  });
+  const sceneOutput = seedOutput.scene;
 
   const scene: StoryScene = {
     id: createId("scene"),
@@ -175,4 +149,3 @@ export async function generateOpenAIStory(params: {
     generatedWith: "openai"
   };
 }
-

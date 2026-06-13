@@ -27,6 +27,11 @@ export interface WorldDefinition {
   description: string;
   tone: string;
   visualCue: string;
+  image: string;
+  accent: string;
+  accentSoft: string;
+  previewTitle: string;
+  previewExcerpt: string;
 }
 
 export interface RelationshipExtraction {
@@ -118,6 +123,14 @@ export interface StoryStartResponse {
   characters: StoryCharacter[];
   firstScene: StoryScene;
   generatedWith: "openai" | "demo";
+  generationNotice?: string;
+  requestId?: string;
+}
+
+export interface StoryApiErrorResponse {
+  error: string;
+  code: string;
+  requestId: string;
 }
 
 export interface StorySummary {
@@ -128,4 +141,3 @@ export interface StorySummary {
   status: string;
   updatedAt: string;
 }
-

@@ -9,4 +9,6 @@ coverage
 *.log
 *.tsbuildinfo
 .tools
+.artifacts
+.dev-storyforge.*
 prisma/dev.db

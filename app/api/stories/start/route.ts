@@ -28,7 +28,11 @@ function isInputKind(value: string): value is InputKind {
 
 function validatePayload(payload: Partial<StoryStartRequest>) {
   if (!payload.inputText || payload.inputText.trim().length < 12) {
-    return "inputText debe tener al menos 12 caracteres.";
+    return "Escribe al menos 12 caracteres para crear una historia.";
+  }
+
+  if (payload.inputText.trim().length > 5000) {
+    return "El texto no puede superar 5000 caracteres.";
   }
 
   if (!payload.inputKind || !isInputKind(payload.inputKind)) {
@@ -43,18 +47,40 @@ function validatePayload(payload: Partial<StoryStartRequest>) {
 }
 
 export async function POST(request: Request) {
+  const requestId = crypto.randomUUID();
+  const responseHeaders = {
+    "X-Request-Id": requestId
+  };
+
+  if (!request.headers.get("content-type")?.includes("application/json")) {
+    return NextResponse.json(
+      {
+        error: "La solicitud debe enviarse como JSON.",
+        code: "INVALID_CONTENT_TYPE",
+        requestId
+      },
+      { status: 415, headers: responseHeaders }
+    );
+  }
+
   let payload: Partial<StoryStartRequest>;
 
   try {
     payload = (await request.json()) as Partial<StoryStartRequest>;
   } catch {
-    return NextResponse.json({ error: "JSON invalido." }, { status: 400 });
+    return NextResponse.json(
+      { error: "No pudimos leer los datos enviados.", code: "INVALID_JSON", requestId },
+      { status: 400, headers: responseHeaders }
+    );
   }
 
   const validationError = validatePayload(payload);
 
   if (validationError) {
-    return NextResponse.json({ error: validationError }, { status: 400 });
+    return NextResponse.json(
+      { error: validationError, code: "VALIDATION_ERROR", requestId },
+      { status: 400, headers: responseHeaders }
+    );
   }
 
   const inputKind = payload.inputKind as InputKind;
@@ -62,38 +88,78 @@ export async function POST(request: Request) {
   const world = getWorldById(payload.worldId!);
 
   if (!world) {
-    return NextResponse.json({ error: "Mundo no encontrado." }, { status: 404 });
+    return NextResponse.json(
+      { error: "El mundo seleccionado no existe.", code: "WORLD_NOT_FOUND", requestId },
+      { status: 404, headers: responseHeaders }
+    );
   }
 
   try {
-    const story = getOpenAIClient()
-      ? await generateOpenAIStory({
-          inputKind,
-          inputText,
-          world
-        })
-      : createDemoStory({
-          inputKind,
-          inputText,
-          worldId: world.id
-        });
+    let story: StoryStartResponse;
+    const openAIClient = getOpenAIClient();
+
+    if (!openAIClient) {
+      story = createDemoStory({ inputKind, inputText, worldId: world.id });
+      story.generationNotice =
+        "Modo demo activo: configura OPENAI_API_KEY para generar historias con IA.";
+    } else {
+      try {
+        story = await generateOpenAIStory({ inputKind, inputText, world });
+      } catch (openAIError) {
+        const allowDemoFallback =
+          process.env.STORYFORGE_DEMO_FALLBACK === "true" ||
+          process.env.NODE_ENV !== "production";
+
+        if (!allowDemoFallback) {
+          throw openAIError;
+        }
+
+        console.error(`[${requestId}] OpenAI generation failed; using demo`, openAIError);
+        story = createDemoStory({ inputKind, inputText, worldId: world.id });
+        story.generationNotice =
+          "OpenAI no estuvo disponible. Mostramos una historia demo para que puedas continuar.";
+      }
+    }
+
+    story.requestId = requestId;
 
     await persistStoryIfConfigured(story);
 
-    return NextResponse.json(story);
+    return NextResponse.json(story, { headers: responseHeaders });
   } catch (error) {
-    console.error("Story generation failed", error);
+    console.error(`[${requestId}] Story generation failed`, error);
 
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "No se pudo generar la historia."
+        error: getPublicGenerationError(error),
+        code: "GENERATION_FAILED",
+        requestId
       },
-      { status: 500 }
+      { status: 502, headers: responseHeaders }
     );
   }
+}
+
+function getPublicGenerationError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return "No pudimos generar la historia. Intenta nuevamente.";
+  }
+
+  const message = error.message.toLowerCase();
+
+  if (message.includes("timeout") || message.includes("timed out")) {
+    return "La generacion tomo demasiado tiempo. Intenta de nuevo en unos segundos.";
+  }
+
+  if (message.includes("api key") || message.includes("authentication")) {
+    return "La conexion con OpenAI no esta configurada correctamente.";
+  }
+
+  if (message.includes("rate limit") || message.includes("429")) {
+    return "El servicio de IA esta ocupado. Espera un momento e intenta nuevamente.";
+  }
+
+  return "No pudimos completar la generacion con IA. Intenta nuevamente.";
 }
 
 async function persistStoryIfConfigured(story: StoryStartResponse) {

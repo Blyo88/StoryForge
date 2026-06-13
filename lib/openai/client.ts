@@ -8,7 +8,9 @@ export function getOpenAIClient() {
   }
 
   cachedClient ??= new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
+    apiKey: process.env.OPENAI_API_KEY,
+    timeout: Number(process.env.OPENAI_TIMEOUT_MS ?? 60000),
+    maxRetries: 1
   });
 
   return cachedClient;
@@ -28,6 +30,10 @@ export async function generateStructuredOutput<T>(params: {
 
   const response = await client.responses.create({
     model: process.env.OPENAI_MODEL ?? "gpt-5.5",
+    store: false,
+    reasoning: {
+      effort: "low"
+    },
     input: [
       {
         role: "system",
@@ -49,9 +55,16 @@ export async function generateStructuredOutput<T>(params: {
   });
 
   if (!response.output_text) {
-    throw new Error("OpenAI returned an empty structured response.");
+    if (response.status === "incomplete") {
+      throw new Error("OpenAI no completo la generacion. Intenta nuevamente.");
+    }
+
+    throw new Error("OpenAI devolvio una respuesta vacia.");
   }
 
-  return JSON.parse(response.output_text) as T;
+  try {
+    return JSON.parse(response.output_text) as T;
+  } catch {
+    throw new Error("OpenAI devolvio una estructura que no se pudo interpretar.");
+  }
 }
-

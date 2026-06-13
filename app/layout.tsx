@@ -5,6 +5,9 @@ import { Sparkles } from "lucide-react";
 
 import { StoryForgeLogo } from "@/components/storyforge-logo";
 
+// TypeScript may complain about side-effect CSS imports if no global declaration is present.
+// Ignore the import type check here since Next.js supports global CSS in the app directory.
+// @ts-ignore
 import "./globals.css";
 
 const geistSans = Geist({

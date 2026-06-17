@@ -1,16 +1,40 @@
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 
-let cachedClient: OpenAI | null = null;
+type GeminiConfig = {
+  apiKey: string;
+  model: string;
+  timeoutMs: number;
+};
 
-export function getOpenAIClient() {
-  if (!process.env.OPENAI_API_KEY) {
+let cachedClient: GoogleGenAI | null = null;
+
+function getGeminiConfig(): GeminiConfig | null {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
     return null;
   }
 
-  cachedClient ??= new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    timeout: Number(process.env.OPENAI_TIMEOUT_MS ?? 60000),
-    maxRetries: 1
+  return {
+    apiKey,
+    model: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
+    timeoutMs: Number(process.env.GEMINI_TIMEOUT_MS ?? 60000)
+  };
+}
+
+export function isGeminiConfigured() {
+  return getGeminiConfig() !== null;
+}
+
+function getGeminiClient() {
+  const config = getGeminiConfig();
+
+  if (!config) {
+    return null;
+  }
+
+  cachedClient ??= new GoogleGenAI({
+    apiKey: config.apiKey
   });
 
   return cachedClient;
@@ -22,49 +46,43 @@ export async function generateStructuredOutput<T>(params: {
   input: string;
   schema: Record<string, unknown>;
 }) {
-  const client = getOpenAIClient();
+  const config = getGeminiConfig();
+  const client = getGeminiClient();
 
-  if (!client) {
-    throw new Error("OPENAI_API_KEY is not configured.");
+  if (!config || !client) {
+    throw new Error("GEMINI_API_KEY is not configured.");
   }
 
-  const response = await client.responses.create({
-    model: process.env.OPENAI_MODEL ?? "gpt-5.5",
-    store: false,
-    reasoning: {
-      effort: "low"
-    },
-    input: [
-      {
-        role: "system",
-        content: params.instructions
+  const response = await client.models.generateContent({
+    model: config.model,
+    contents: params.input,
+    config: {
+      httpOptions: {
+        timeout: config.timeoutMs
       },
-      {
-        role: "user",
-        content: params.input
-      }
-    ],
-    text: {
-      format: {
-        type: "json_schema",
-        name: params.name,
-        schema: params.schema,
-        strict: true
-      }
+      // Keep task context in system instruction and require strict JSON output.
+      systemInstruction: `${params.instructions}\n\nSchema name: ${params.name}`,
+      temperature: 0.4,
+      responseMimeType: "application/json",
+      responseJsonSchema: params.schema
     }
   });
 
-  if (!response.output_text) {
-    if (response.status === "incomplete") {
-      throw new Error("OpenAI no completo la generacion. Intenta nuevamente.");
+  const outputText = response.text?.trim();
+
+  if (!outputText) {
+    const finishReason = response.candidates?.[0]?.finishReason;
+
+    if (finishReason && finishReason !== "STOP") {
+      throw new Error("Gemini no completo la generacion. Intenta nuevamente.");
     }
 
-    throw new Error("OpenAI devolvio una respuesta vacia.");
+    throw new Error("Gemini devolvio una respuesta vacia.");
   }
 
   try {
-    return JSON.parse(response.output_text) as T;
+    return JSON.parse(outputText) as T;
   } catch {
-    throw new Error("OpenAI devolvio una estructura que no se pudo interpretar.");
+    throw new Error("Gemini devolvio una estructura que no se pudo interpretar.");
   }
 }

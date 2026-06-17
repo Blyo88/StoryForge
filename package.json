@@ -15,6 +15,7 @@
     "postinstall": "node node_modules/prisma/build/index.js generate"
   },
   "dependencies": {
+    "@google/genai": "^2.8.0",
     "@prisma/client": "^6.14.0",
     "@radix-ui/react-slot": "^1.1.1",
     "@supabase/ssr": "^0.7.0",
@@ -24,7 +25,6 @@
     "framer-motion": "^12.40.0",
     "lucide-react": "^0.468.0",
     "next": "^15.0.0",
-    "openai": "^5.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.5",

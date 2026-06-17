@@ -76,7 +76,7 @@ function buildStorySeedInput(params: {
   );
 }
 
-export async function generateOpenAIStory(params: {
+export async function generateGeminiStory(params: {
   inputKind: InputKind;
   inputText: string;
   world: WorldDefinition;
@@ -146,6 +146,6 @@ export async function generateOpenAIStory(params: {
     extraction,
     characters,
     firstScene: scene,
-    generatedWith: "openai"
+    generatedWith: "gemini"
   };
 }

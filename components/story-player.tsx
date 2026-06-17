@@ -37,7 +37,7 @@ export function StoryPlayer({ story }: { story: StoryStartResponse }) {
           <div className="mb-5 flex flex-wrap gap-2">
             <Badge variant="secondary">{story.storySession.worldName}</Badge>
             <Badge variant="outline" className="border-white/20 bg-black/20 text-white">
-              {story.generatedWith === "openai" ? "Generada con IA" : "Demo local"}
+              {story.generatedWith === "gemini" ? "Generada con IA" : "Demo local"}
             </Badge>
           </div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/65">

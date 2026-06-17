@@ -10,7 +10,7 @@ Primera version funcional de StoryForge: una app Next.js 15 que convierte una ex
 - shadcn/ui style components
 - Supabase
 - Prisma
-- OpenAI Responses API
+- Gemini API
 - Framer Motion
 
 ## Estructura
@@ -55,9 +55,9 @@ types/
 Copia `.env.local.example` a `.env.local` y configura:
 
 ```bash
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-5.5
-OPENAI_TIMEOUT_MS=60000
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_TIMEOUT_MS=60000
 STORYFORGE_DEMO_FALLBACK=true
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
@@ -65,9 +65,9 @@ DATABASE_URL=
 DIRECT_URL=
 ```
 
-Si `OPENAI_API_KEY` no existe, `/api/stories/start` responde con una historia demo local para permitir probar la UI.
+Si `GEMINI_API_KEY` no existe, `/api/stories/start` responde con una historia demo local para permitir probar la UI.
 
-Si OpenAI falla durante desarrollo, `STORYFORGE_DEMO_FALLBACK=true` mantiene el flujo funcional y muestra un aviso visible indicando que se uso el modo demo.
+Si Gemini falla durante desarrollo, `STORYFORGE_DEMO_FALLBACK=true` mantiene el flujo funcional y muestra un aviso visible indicando que se uso el modo demo.
 
 Si `DATABASE_URL` no existe, la historia se genera pero no se persiste.
 

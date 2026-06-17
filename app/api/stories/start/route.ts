@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 
-import { getOpenAIClient } from "@/lib/openai/client";
+import { isGeminiConfigured } from "@/lib/openai/client";
 import { isDatabaseConfigured, prisma } from "@/lib/prisma";
-import { generateOpenAIStory } from "@/lib/story/generate";
+import { generateGeminiStory } from "@/lib/story/generate";
 import { createDemoStory } from "@/lib/story/mock";
 import { getWorldById, isWorldId } from "@/lib/story/worlds";
 import type { InputKind, StoryStartRequest, StoryStartResponse } from "@/types/story";
@@ -96,28 +96,28 @@ export async function POST(request: Request) {
 
   try {
     let story: StoryStartResponse;
-    const openAIClient = getOpenAIClient();
+    const geminiConfigured = isGeminiConfigured();
 
-    if (!openAIClient) {
+    if (!geminiConfigured) {
       story = createDemoStory({ inputKind, inputText, worldId: world.id });
       story.generationNotice =
-        "Modo demo activo: configura OPENAI_API_KEY para generar historias con IA.";
+        "Modo demo activo: configura GEMINI_API_KEY para generar historias con IA.";
     } else {
       try {
-        story = await generateOpenAIStory({ inputKind, inputText, world });
-      } catch (openAIError) {
+        story = await generateGeminiStory({ inputKind, inputText, world });
+      } catch (geminiError) {
         const allowDemoFallback =
           process.env.STORYFORGE_DEMO_FALLBACK === "true" ||
           process.env.NODE_ENV !== "production";
 
         if (!allowDemoFallback) {
-          throw openAIError;
+          throw geminiError;
         }
 
-        console.error(`[${requestId}] OpenAI generation failed; using demo`, openAIError);
+        console.error(`[${requestId}] Gemini generation failed; using demo`, geminiError);
         story = createDemoStory({ inputKind, inputText, worldId: world.id });
         story.generationNotice =
-          "OpenAI no estuvo disponible. Mostramos una historia demo para que puedas continuar.";
+          "Gemini no estuvo disponible. Mostramos una historia demo para que puedas continuar.";
       }
     }
 
@@ -152,7 +152,7 @@ function getPublicGenerationError(error: unknown) {
   }
 
   if (message.includes("api key") || message.includes("authentication")) {
-    return "La conexion con OpenAI no esta configurada correctamente.";
+    return "La conexion con Gemini no esta configurada correctamente.";
   }
 
   if (message.includes("rate limit") || message.includes("429")) {

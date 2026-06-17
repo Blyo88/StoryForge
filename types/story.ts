@@ -122,7 +122,7 @@ export interface StoryStartResponse {
   extraction: NarrativeExtraction;
   characters: StoryCharacter[];
   firstScene: StoryScene;
-  generatedWith: "openai" | "demo";
+  generatedWith: "gemini" | "demo";
   generationNotice?: string;
   requestId?: string;
 }
